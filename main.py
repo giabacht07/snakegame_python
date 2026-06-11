@@ -13,7 +13,7 @@ import pygame
 
 from config import (COLOR_BG, COLOR_GRID, COLOR_TEXT, COLOR_TEXT_MUTED, FPS,
                     GRID_HEIGHT, GRID_SIZE, GRID_WIDTH, HUD_HEIGHT, HUD_Y,
-                    HEIGHT, TOTAL_TILES, WIDTH)
+                    HEIGHT, TOTAL_TILES, WIDTH, WINDOW_BORDER)
 from decorators import log_game_event
 from entities import Snake, NormalFood, SuperFood, PoisonFood
 from history import GameHistoryManager
@@ -24,7 +24,10 @@ class GameApp:
     """ Primary application kernel managing GUI scene routing and layout composition. """
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        # Create a slightly larger window to accommodate an outer border
+        win_w = WIDTH + 2 * WINDOW_BORDER
+        win_h = HEIGHT + 2 * WINDOW_BORDER
+        self.screen = pygame.display.set_mode((win_w, win_h))
         pygame.display.set_caption("the Snake Game")
         self.clock = pygame.time.Clock()
 
@@ -301,7 +304,20 @@ class GameApp:
             pass
 
     def render_graphics(self):
+        # Fill the outer window background (border area)
         self.screen.fill(COLOR_BG)
+
+        # Render everything onto an internal canvas matching the logical
+        # game area, then blit that canvas centered inside the outer window
+        canvas = pygame.Surface((WIDTH, HEIGHT))
+        canvas.fill(COLOR_BG)
+
+        # Temporarily route drawing calls to the canvas by swapping
+        # ``self.screen`` to the canvas for the duration of this method's
+        # drawing phase. Afterwards we restore the original screen and
+        # blit the canvas into the bordered window.
+        old_screen = self.screen
+        self.screen = canvas
 
         if self.state == "MENU":
             # Title Soft Panel Glow Backdrop
@@ -434,6 +450,21 @@ class GameApp:
                 self.draw_overlay("CRITICAL COLLISION: GAME OVER", (231, 76, 60))
             elif self.game_won:
                 self.draw_overlay("ECOSYSTEM COMPLETED: VICTORY!", (46, 204, 113))
+
+        # Restore the real window surface and blit the canvas into it
+        self.screen = old_screen
+        self.screen.blit(canvas, (WINDOW_BORDER, WINDOW_BORDER))
+
+        # Draw outer border framing the game area
+        try:
+            pygame.draw.rect(
+                self.screen,
+                COLOR_TEXT,
+                pygame.Rect(0, 0, WIDTH + 2 * WINDOW_BORDER, HEIGHT + 2 * WINDOW_BORDER),
+                WINDOW_BORDER,
+            )
+        except Exception:
+            pass
 
         pygame.display.flip()
 

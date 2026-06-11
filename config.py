@@ -9,6 +9,7 @@ HEIGHT = GRID_HEIGHT * GRID_SIZE + HUD_HEIGHT
 TOTAL_TILES = GRID_WIDTH * GRID_HEIGHT
 FPS = 10
 HUD_Y = 0  # Y position where legend starts
+WINDOW_BORDER = 5  # Thickness in pixels of the outer window border
 
 # Color Configuration Matrix (RGB Palettes)
 COLOR_BG = (24, 26, 27)
