@@ -1,4 +1,12 @@
-"""User interface widgets for the Snake Game menu and input controls."""
+"""User interface widgets for the Snake Game menu and input controls.
+
+Contains small, focused UI primitives used by the main menu:
+- ``Button``: Clickable button with hover visual state.
+- ``TextInput``: Simple single-line text entry with cursor and basic validation.
+
+These widgets directly use Pygame surfaces and events and intentionally avoid
+any complex layout logic to remain lightweight.
+"""
 
 import time
 
@@ -68,6 +76,8 @@ class TextInput:
             elif event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
                 self.active = False
             else:
+                # Limit text input to a short username and allow only common
+                # safe characters to avoid rendering surprises or injection.
                 if len(self.text) < 14 and (event.unicode.isalnum() or event.unicode in " _-"):
                     self.text += event.unicode
 

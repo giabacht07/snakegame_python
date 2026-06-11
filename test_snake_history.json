@@ -1,12 +1,12 @@
 [
     {
         "name": "Alpha",
-        "score": 50,
+        "length": 50,
         "timestamp": "2026-06-10 15:56:35"
     },
     {
         "name": "Beta",
-        "score": 10,
+        "length": 10,
         "timestamp": "2026-06-10 15:56:35"
     }
 ]

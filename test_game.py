@@ -81,6 +81,18 @@ def test_history_manager_io(tmp_path):
     assert history[0]["name"] == "Alpha"  # Higher score (50) must sort to index 0
 
 
+def test_history_contains_length(tmp_path):
+    """Verify saved history records include the `length` key and store integer lengths."""
+    test_db = os.path.join(tmp_path, "test_snake_history.json")
+    manager = GameHistoryManager(filename=test_db)
+    manager.save_record("Alice", 7)
+    history = manager.load_history()
+    assert len(history) == 1
+    assert "length" in history[0]
+    assert isinstance(history[0]["length"], int)
+    assert history[0]["length"] == 7
+
+
 if __name__ == "__main__":
     import pytest
     pytest.main()

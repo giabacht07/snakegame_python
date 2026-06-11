@@ -20,6 +20,7 @@ A modern, feature-rich implementation of the classic Snake game built with Pytho
 
 - Python 3.7+
 - Pygame 2.6.0
+- pytest (for running tests during development)
 
 ## Installation
 
@@ -33,7 +34,8 @@ cd final
 ```
 
 ### 3. Install Dependencies
-Install the required packages using pip:
+Install the required packages using pip. For development (tests) the
+requirements.txt includes `pytest`:
 ```bash
 pip install -r requirements.txt
 ```
@@ -105,9 +107,18 @@ final/
 
 ## Leaderboard
 
-The leaderboard is automatically saved to `snake_history.json` and persists between sessions. Records are sorted by:
+The leaderboard is automatically saved to `snake_history.json` and persists between sessions. Records are stored as JSON objects with the keys:
+
+- ``name``: player profile string
+- ``length``: integer snake length at session end
+- ``timestamp``: timestamp string when saved
+
+Records are sorted by:
 - **Primary**: Snake length (descending - longest first)
 - **Secondary**: Timestamp (most recent first for tied lengths)
+
+Backward compatibility: older files that used the ``score`` key are auto-migrated
+to the new ``length`` key when loaded by the application.
 
 You can view the leaderboard by clicking "View Leaderboard" in the main menu.
 

@@ -1,4 +1,9 @@
-"""Main module for the Snake Game application, handling game state and rendering."""
+"""Main application kernel for the Snake Game.
+
+This module provides the ``GameApp`` class which manages application state,
+rendering, input handling, and the main game loop. Game score is tracked by
+the snake's current length and persisted via the history manager.
+"""
 
 import sys
 import time
@@ -80,6 +85,7 @@ class GameApp:
         ]
 
     def reset_game_state(self):
+        # Spawn snake near the center of the grid and reset session state
         self.snake = Snake(GRID_WIDTH // 2, GRID_HEIGHT // 2)
         self.normal_food = None
         self.special_foods = []
@@ -87,10 +93,12 @@ class GameApp:
         self.last_special_spawn = time.time()
         self.game_over = False
         self.game_won = False
-        self.score = 0
+        # `score` removed: leaderboard now uses snake length directly
         self.paused = False
 
     def get_vacant_cells(self):
+        # Compute grid cells not currently occupied by snake or food items.
+        # This is used to place new food entities safely.
         occupied = set(self.snake.body)
         if self.normal_food:
             occupied.add(self.normal_food.get_position())
@@ -111,26 +119,34 @@ class GameApp:
             self.normal_food = NormalFood(pos[0], pos[1])
 
     def resolve_food_interaction(self, next_head_pos):
-        """Resolve food collisions and return (grow, shrink, points)."""
-        if next_head_pos == self.normal_food.get_position():
-            self.spawn_normal_food()
-            return 1, 0, 10
+        """Resolve food collisions and return (grow, shrink).
 
+        Points are removed — length will be used as the score instead.
+        """
+        # Normal food: single-segment growth and immediate respawn.
+        if self.normal_food and next_head_pos == self.normal_food.get_position():
+            self.spawn_normal_food()
+            return 1, 0
+
+        # Check for collisions with time-limited special foods.
         eaten_item = next(
             (sf for sf in self.special_foods if next_head_pos == sf.get_position()),
             None,
         )
         if eaten_item is None:
-            return 0, 0, 0
+            return 0, 0
 
         self.special_foods.remove(eaten_item)
         if isinstance(eaten_item, SuperFood):
-            return 3, 0, 50
+            # Super food gives multiple segments of growth.
+            return 3, 0
 
         if isinstance(eaten_item, PoisonFood):
-            return 0, max(1, len(self.snake.body) // 2), 0
+            # Poison halves the snake length (rounded down) but never
+            # removes the head immediately to avoid instant death.
+            return 0, max(1, len(self.snake.body) // 2)
 
-        return 0, 0, 0
+        return 0, 0
 
     @log_game_event
     def trigger_special_spawn(self):
@@ -234,18 +250,18 @@ class GameApp:
         dx, dy = self.snake.next_direction
         next_head_pos = (head_x + dx, head_y + dy)
 
-        grow, shrink, points = self.resolve_food_interaction(next_head_pos)
-        self.score += points
+        grow, shrink = self.resolve_food_interaction(next_head_pos)
         self.snake.move(grow=grow, shrink=shrink)
+        # Score attribute removed; use snake length directly when needed
 
         if len(self.snake.body) == 0 or self.snake.check_collision(GRID_WIDTH, GRID_HEIGHT):
             self.game_over = True
-            self.history_manager.save_record(self.name_input.text, self.score)
+            self.history_manager.save_record(self.name_input.text, len(self.snake.body))
             return
 
         if len(self.snake.body) >= TOTAL_TILES:
             self.game_won = True
-            self.history_manager.save_record(self.name_input.text, self.score)
+            self.history_manager.save_record(self.name_input.text, len(self.snake.body))
 
     # ── High-Fidelity Food Drawing Interceptor ─────────────────────────────────
     def draw_polished_food(self, food):
@@ -316,7 +332,7 @@ class GameApp:
             header = self.font_ui.render(
                 (
                     f"{'Rank':<8}{'Player Profile':<24}"
-                    f"{'Score'}"
+                    f"{'Length'}"
                 ),
                 True,
                 COLOR_TEXT_MUTED,
@@ -345,7 +361,7 @@ class GameApp:
 
                 r_txt = f"#{idx:<6}"
                 n_txt = f"{item['name'][:18]:<25}"
-                s_txt = f"{item['score']} pts"
+                s_txt = f"{item['length']}"
 
                 self.screen.blit(self.font_sm.render(r_txt, True, rank_color), (75, start_y))
                 self.screen.blit(self.font_sm.render(n_txt, True, COLOR_TEXT), (145, start_y))
@@ -379,7 +395,6 @@ class GameApp:
 
             hud_str = (
                 f"User Profile: {self.name_input.text}  │  "
-                f"Score: {self.score}  │  "
                 f"Length: {len(self.snake.body)} / {TOTAL_TILES}"
             )
             hud_surface = self.font_sm.render(hud_str, True, COLOR_TEXT)

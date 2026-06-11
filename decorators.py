@@ -1,4 +1,9 @@
-"""Decorators used for logging and history persistence in the Snake Game."""
+"""Decorators used for logging and history persistence in the Snake Game.
+
+Provides small wrappers for logging game events and validating/presenting
+history pipeline messages. These decorators are intentionally light-weight to
+avoid coupling with application state.
+"""
 
 from functools import wraps
 
@@ -15,10 +20,12 @@ def log_game_event(func):
 def history_pipeline(func):
     """ Decorator verifying structural data constraints before flushing records to storage. """
     @wraps(func)
-    def wrapper(manager_instance, name, score):
+    def wrapper(manager_instance, name, length):
+        # Simple auditing hook used during development and tests. In a
+        # production setting consider using a proper logging framework.
         print(
             f"[DATA-PIPELINE] Incoming validation intercept -> User: {name}, "
-            f"Tail Segments: {score}"
+            f"Tail Length: {length}"
         )
-        return func(manager_instance, name, score)
+        return func(manager_instance, name, length)
     return wrapper

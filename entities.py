@@ -1,4 +1,14 @@
-"""Entity models used by the Snake Game, including the snake and food types."""
+"""Entity models used by the Snake Game, including the snake and food types.
+
+This module provides the following classes:
+- ``Food``: Base drawable food entity.
+- ``TimedFood``: Food that expires after a duration and blinks before removal.
+- ``NormalFood``, ``SuperFood``, ``PoisonFood``: Concrete food types.
+- ``Snake``: Manages the snake body segments, movement, growth, and collisions.
+
+The ``Snake.move`` method supports optional ``grow`` and ``shrink`` parameters
+to modify body length in response to food interactions.
+"""
 
 import time
 
@@ -82,6 +92,8 @@ class Snake:
         self.next_direction = (1, 0)
 
     def change_direction(self, vector):
+        # Prevent a 180-degree (direct reverse) direction change which would
+        # immediately collide the head with the next segment.
         if (vector[0] * -1, vector[1] * -1) != self.direction:
             self.next_direction = vector
 
@@ -94,13 +106,18 @@ class Snake:
 
         self.body.insert(0, new_head)
 
+        # When growing, we insert the new head and then duplicate the tail
+        # segments to increase length by the requested amount.
         if grow:
             extra_growth = max(0, grow - 1)
             for _ in range(extra_growth):
                 self.body.append(self.body[-1])
         else:
+            # Standard movement removes the last segment (tail follows head)
             self.body.pop()
             if shrink:
+                # Shrink should not remove the head segment; ensure at least
+                # one segment remains after shrink operations.
                 shrink_amount = min(shrink, len(self.body) - 1)
                 for _ in range(shrink_amount):
                     self.body.pop()

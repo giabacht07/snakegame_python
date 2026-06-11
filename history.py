@@ -1,4 +1,11 @@
-"""History persistence manager for snake length leaderboard records."""
+"""History persistence manager for snake length leaderboard records.
+
+This class encapsulates loading, migrating, and saving persistent leaderboard
+records to a JSON file. Records are dictionaries containing ``name``,
+``length``, and a ``timestamp``. The loader performs a safe migration of the
+legacy ``score`` field to the new ``length`` field to maintain compatibility
+with older files.
+"""
 
 import json
 import os
@@ -17,20 +24,38 @@ class GameHistoryManager:
         try:
             with open(self.filename, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                return data if isinstance(data, list) else []
+                if not isinstance(data, list):
+                    return []
+
+            # Migrate legacy records that used the 'score' key to the new 'length' key.
+            migrated = False
+            for rec in data:
+                if isinstance(rec, dict) and "score" in rec:
+                    rec["length"] = rec.pop("score")
+                    migrated = True
+
+            if migrated:
+                try:
+                    with open(self.filename, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4)
+                except IOError:
+                    # If migration write fails, continue using the in-memory migrated data
+                    pass
+
+            return data
         except (json.JSONDecodeError, IOError):
             return []
 
     @history_pipeline
-    def save_record(self, name, score):
-        """Save a leaderboard record and sort the table by descending score."""
+    def save_record(self, name, length):
+        """Save a leaderboard record and sort the table by descending length."""
         history = self.load_history()
         history.append({
             "name": name,
-            "score": score,
+            "length": length,
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         })
-        history.sort(key=lambda r: r["score"], reverse=True)
+        history.sort(key=lambda r: r.get("length", 0), reverse=True)
 
 
         try:
