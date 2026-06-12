@@ -12,7 +12,9 @@ A modern, feature-rich implementation of the classic Snake game built with Pytho
 - **Blinking Effect**: Special foods blink after 3 seconds to warn before they disappear
 - **Persistent Leaderboard**: Records and ranks player scores based on maximum snake length
 - **Descending Score Ranking**: Longest snakes are ranked first
+- **Length-Based Ranking**: Score is determined by snake length, not points
 - **Fixed HUD**: UI legend stays at the top without obscuring the playable grid
+- **Window Border**: A 5px outer border frames the game window without touching the grid
 - **Smooth Controls**: Arrow keys or WASD to navigate
 - **Game States**: Menu, Gameplay, and Leaderboard views
 
@@ -20,7 +22,6 @@ A modern, feature-rich implementation of the classic Snake game built with Pytho
 
 - Python 3.7+
 - Pygame 2.6.0
-- pytest (for running tests during development)
 
 ## Installation
 
@@ -30,14 +31,25 @@ Ensure Python 3.7 or higher is installed on your system. Download from [python.o
 ### 2. Clone or Download the Project
 Navigate to the project directory:
 ```bash
-cd final
+cd snake_game
 ```
 
-### 3. Install Dependencies
-Install the required packages using pip. For development (tests) the
-requirements.txt includes `pytest`:
+### 3. Install Runtime Dependencies
+Install the packages needed to run the game:
 ```bash
 pip install -r requirements.txt
+```
+
+### 4. Install Development Dependencies
+If you want to run tests or lint the code, install developer packages too:
+```bash
+pip install -r dev-requirements.txt
+```
+
+## Running Tests
+Run the automated test suite with:
+```bash
+python -m pytest -q
 ```
 
 ## Running the Game
@@ -134,7 +146,7 @@ You can view the leaderboard by clicking "View Leaderboard" in the main menu.
 
 - **Grid Size**: 25×25 tiles (625 total)
 - **Tile Size**: 25 pixels
-- **Window Size**: 625×675 pixels (25×25 grid + 50px HUD)
+- **Window Size**: 635×685 pixels (25×25 grid + 50px HUD + 5px border)
 - **FPS**: 10 (one move per frame)
 - **Special Food Duration**: 5 seconds
 - **Blink Warning**: Starts at 3 seconds
