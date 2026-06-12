@@ -5,7 +5,10 @@ history pipeline messages. These decorators are intentionally light-weight to
 avoid coupling with application state.
 """
 
+import logging
 from functools import wraps
+
+logger = logging.getLogger(__name__)
 
 
 def log_game_event(func):
@@ -13,19 +16,16 @@ def log_game_event(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        print(f"[EVENT-STREAM] Invoked: {func.__name__:<22} | Return Context: {result}")
+        logger.debug("Invoked: %-22s | Return Context: %s", func.__name__, result)
         return result
     return wrapper
 
 def history_pipeline(func):
     """ Decorator verifying structural data constraints before flushing records to storage. """
     @wraps(func)
-    def wrapper(manager_instance, name, length):
-        # Simple auditing hook used during development and tests. In a
-        # production setting consider using a proper logging framework.
-        print(
-            f"[DATA-PIPELINE] Incoming validation intercept -> User: {name}, "
-            f"Tail Length: {length}"
-        )
-        return func(manager_instance, name, length)
+    def wrapper(*args, **kwargs):
+        # args[1] and args[2] are name and length when called as a bound method
+        if len(args) >= 3:
+            logger.debug("Incoming validation intercept -> User: %s, Tail Length: %s", args[1], args[2])
+        return func(*args, **kwargs)
     return wrapper

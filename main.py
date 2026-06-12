@@ -13,7 +13,7 @@ import pygame
 
 from config import (COLOR_BG, COLOR_GRID, COLOR_TEXT, COLOR_TEXT_MUTED, FPS,
                     GRID_HEIGHT, GRID_SIZE, GRID_WIDTH, HUD_HEIGHT, HUD_Y,
-                    HEIGHT, TOTAL_TILES, WIDTH, WINDOW_BORDER)
+                    HEIGHT, SPECIAL_FOOD_INTERVAL, TOTAL_TILES, WIDTH, WINDOW_BORDER)
 from decorators import log_game_event
 from entities import Snake, NormalFood, SuperFood, PoisonFood
 from history import GameHistoryManager
@@ -34,6 +34,7 @@ class GameApp:
         self.font_title = pygame.font.SysFont("Consolas", 44, bold=True)
         self.font_ui = pygame.font.SysFont("Consolas", 20, bold=True)
         self.font_sm = pygame.font.SysFont("Consolas", 15)
+        self.font_emoji = pygame.font.SysFont("Segoe UI Symbol", int(GRID_SIZE * 0.75))
 
         self.history_manager = GameHistoryManager()
         self.state = "MENU"
@@ -107,12 +108,8 @@ class GameApp:
             occupied.add(self.normal_food.get_position())
         for sf in self.special_foods:
             occupied.add(sf.get_position())
-        vacant_cells = []
-        for x in range(GRID_WIDTH):
-            for y in range(GRID_HEIGHT):
-                if (x, y) not in occupied:
-                    vacant_cells.append((x, y))
-        return vacant_cells
+        all_cells = {(x, y) for x in range(GRID_WIDTH) for y in range(GRID_HEIGHT)}
+        return list(all_cells - occupied)
 
     def spawn_normal_food(self):
         """Place normal food on a random vacant cell within the grid."""
@@ -245,7 +242,7 @@ class GameApp:
 
         self.special_foods = [sf for sf in self.special_foods if sf.update()]
 
-        if time.time() - self.last_special_spawn >= 8.0:
+        if time.time() - self.last_special_spawn >= SPECIAL_FOOD_INTERVAL:
             self.trigger_special_spawn()
             self.last_special_spawn = time.time()
 
@@ -293,15 +290,9 @@ class GameApp:
         pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy), r, 1)
 
         # 3. Dynamic Emoji Graphic Layout Overlay
-        try:
-            emoji_font = pygame.font.SysFont("Segoe UI Symbol", int(GRID_SIZE * 0.75))
-            if not emoji_font:
-                emoji_font = self.font_sm
-            lbl_surf = emoji_font.render(label, True, (255, 255, 255))
-            lbl_rect = lbl_surf.get_rect(center=(cx, cy))
-            self.screen.blit(lbl_surf, lbl_rect)
-        except Exception:
-            pass
+        lbl_surf = self.font_emoji.render(label, True, (255, 255, 255))
+        lbl_rect = lbl_surf.get_rect(center=(cx, cy))
+        self.screen.blit(lbl_surf, lbl_rect)
 
     def render_graphics(self):
         # Fill the outer window background (border area)
@@ -318,153 +309,152 @@ class GameApp:
         # blit the canvas into the bordered window.
         old_screen = self.screen
         self.screen = canvas
-
-        if self.state == "MENU":
-            # Title Soft Panel Glow Backdrop
-            title = self.font_title.render("SNAKE GAME", True, (46, 204, 113))
-            tx = WIDTH // 2 - title.get_width() // 2
-            ty = 60
-            glow_panel = pygame.Surface(
-                (title.get_width() + 32, title.get_height() + 12),
-                pygame.SRCALPHA,
-            )
-            pygame.draw.rect(glow_panel, (46, 204, 113, 18), glow_panel.get_rect(), border_radius=8)
-            self.screen.blit(glow_panel, (tx - 16, ty - 6))
-            self.screen.blit(title, (tx, ty))
-
-            lbl = self.font_sm.render("Enter Profile Name Configuration:", True, COLOR_TEXT_MUTED)
-            self.screen.blit(lbl, (WIDTH // 2 - 125, 145))
-
-            self.name_input.draw(self.screen)
-            for btn in self.menu_buttons: btn.draw(self.screen)
-
-        elif self.state == "LEADERBOARD":
-            title = self.font_title.render("SCOREBOARD HISTORY", True, (241, 196, 15))
-            self.screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 35))
-
-            records = self.history_manager.load_history()
-            start_y = 110
-
-            header = self.font_ui.render(
-                (
-                    f"{'Rank':<8}{'Player Profile':<24}"
-                    f"{'Length'}"
-                ),
-                True,
-                COLOR_TEXT_MUTED,
-            )
-            self.screen.blit(header, (75, start_y))
-            pygame.draw.line(
-                self.screen,
-                (70, 75, 85),
-                (60, start_y + 32),
-                (WIDTH - 60, start_y + 32),
-                2,
-            )
-
-            start_y += 45
-            # Display sorted records sequentially with alternating matrix shading
-            for idx, item in enumerate(records[:8], 1):
-                row_rect = pygame.Rect(60, start_y - 4, WIDTH - 120, 26)
-                if idx % 2 == 0:
-                    pygame.draw.rect(self.screen, (32, 36, 42), row_rect, border_radius=4)
-
-                # Dynamic Podium Tier Color Maps
-                if idx == 1:   rank_color = (241, 196, 15)  # Gold
-                elif idx == 2: rank_color = (185, 190, 195) # Silver
-                elif idx == 3: rank_color = (205, 127, 50)  # Bronze
-                else:          rank_color = COLOR_TEXT
-
-                r_txt = f"#{idx:<6}"
-                n_txt = f"{item['name'][:18]:<25}"
-                s_txt = f"{item['length']}"
-
-                self.screen.blit(self.font_sm.render(r_txt, True, rank_color), (75, start_y))
-                self.screen.blit(self.font_sm.render(n_txt, True, COLOR_TEXT), (145, start_y))
-                score_surface = self.font_sm.render(
-                    s_txt,
-                    True,
-                    (46, 204, 113),
+        try:
+            if self.state == "MENU":
+                # Title Soft Panel Glow Backdrop
+                title = self.font_title.render("SNAKE GAME", True, (46, 204, 113))
+                tx = WIDTH // 2 - title.get_width() // 2
+                ty = 60
+                glow_panel = pygame.Surface(
+                    (title.get_width() + 32, title.get_height() + 12),
+                    pygame.SRCALPHA,
                 )
-                self.screen.blit(score_surface, (WIDTH - 210, start_y))
+                pygame.draw.rect(glow_panel, (46, 204, 113, 18), glow_panel.get_rect(), border_radius=8)
+                self.screen.blit(glow_panel, (tx - 16, ty - 6))
+                self.screen.blit(title, (tx, ty))
 
-                start_y += 30
+                lbl = self.font_sm.render("Enter Profile Name Configuration:", True, COLOR_TEXT_MUTED)
+                self.screen.blit(lbl, (WIDTH // 2 - 125, 145))
 
-            if not records:
-                empty_surf = self.font_ui.render(
-                    "No pipeline files initialized.",
+                self.name_input.draw(self.screen)
+                for btn in self.menu_buttons: btn.draw(self.screen)
+
+            elif self.state == "LEADERBOARD":
+                title = self.font_title.render("SCOREBOARD HISTORY", True, (241, 196, 15))
+                self.screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 35))
+
+                records = self.history_manager.load_history()
+                start_y = 110
+
+                header = self.font_ui.render(
+                    (
+                        f"{'Rank':<8}{'Player Profile':<24}"
+                        f"{'Length'}"
+                    ),
                     True,
                     COLOR_TEXT_MUTED,
                 )
-                self.screen.blit(
-                    empty_surf,
-                    (WIDTH // 2 - empty_surf.get_width() // 2, HEIGHT // 2 - 20),
-                )
-
-            for btn in self.leaderboard_buttons: btn.draw(self.screen)
-
-        elif self.state == "GAME":
-            # Translucent structural ribbon behind text HUD (fixed at top)
-            hud_ribbon = pygame.Surface((WIDTH, HUD_HEIGHT), pygame.SRCALPHA)
-            hud_ribbon.fill((15, 17, 22, 220))
-            self.screen.blit(hud_ribbon, (0, HUD_Y))
-
-            hud_str = (
-                f"User Profile: {self.name_input.text}  │  "
-                f"Length: {len(self.snake.body)} / {TOTAL_TILES}"
-            )
-            hud_surface = self.font_sm.render(hud_str, True, COLOR_TEXT)
-            self.screen.blit(hud_surface, (15, HUD_Y + 15))
-
-            # Grid lines (below HUD)
-            for x in range(GRID_WIDTH + 1):
+                self.screen.blit(header, (75, start_y))
                 pygame.draw.line(
                     self.screen,
-                    COLOR_GRID,
-                    (x * GRID_SIZE, HUD_HEIGHT),
-                    (x * GRID_SIZE, HEIGHT),
-                )
-            for y in range(GRID_HEIGHT + 1):
-                pygame.draw.line(
-                    self.screen,
-                    COLOR_GRID,
-                    (0, y * GRID_SIZE + HUD_HEIGHT),
-                    (WIDTH, y * GRID_SIZE + HUD_HEIGHT),
+                    (70, 75, 85),
+                    (60, start_y + 32),
+                    (WIDTH - 60, start_y + 32),
+                    2,
                 )
 
-            # Render upgraded vector overlays instead of basic rect blocks
-            if self.normal_food:
-                self.draw_polished_food(self.normal_food)
-            for sf in self.special_foods:
-                self.draw_polished_food(sf)
+                start_y += 45
+                # Display sorted records sequentially with alternating matrix shading
+                for idx, item in enumerate(records[:8], 1):
+                    row_rect = pygame.Rect(60, start_y - 4, WIDTH - 120, 26)
+                    if idx % 2 == 0:
+                        pygame.draw.rect(self.screen, (32, 36, 42), row_rect, border_radius=4)
 
-            self.snake.draw(self.screen)
+                    # Dynamic Podium Tier Color Maps
+                    if idx == 1:   rank_color = (241, 196, 15)  # Gold
+                    elif idx == 2: rank_color = (185, 190, 195) # Silver
+                    elif idx == 3: rank_color = (205, 127, 50)  # Bronze
+                    else:          rank_color = COLOR_TEXT
 
-            if self.paused:
-                pause_overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-                pause_overlay.fill((16, 18, 23, 150))
-                self.screen.blit(pause_overlay, (0, 0))
-                pt = self.font_ui.render("PAUSED  —  Press P to Resume", True, (52, 152, 219))
-                self.screen.blit(pt, (WIDTH // 2 - pt.get_width() // 2, HEIGHT // 2 - pt.get_height() // 2))
-            elif self.game_over:
-                self.draw_overlay("CRITICAL COLLISION: GAME OVER", (231, 76, 60))
-            elif self.game_won:
-                self.draw_overlay("ECOSYSTEM COMPLETED: VICTORY!", (46, 204, 113))
+                    r_txt = f"#{idx:<6}"
+                    n_txt = f"{item['name'][:18]:<25}"
+                    s_txt = f"{item['length']}"
 
-        # Restore the real window surface and blit the canvas into it
-        self.screen = old_screen
+                    self.screen.blit(self.font_sm.render(r_txt, True, rank_color), (75, start_y))
+                    self.screen.blit(self.font_sm.render(n_txt, True, COLOR_TEXT), (145, start_y))
+                    score_surface = self.font_sm.render(
+                        s_txt,
+                        True,
+                        (46, 204, 113),
+                    )
+                    self.screen.blit(score_surface, (WIDTH - 210, start_y))
+
+                    start_y += 30
+
+                if not records:
+                    empty_surf = self.font_ui.render(
+                        "No pipeline files initialized.",
+                        True,
+                        COLOR_TEXT_MUTED,
+                    )
+                    self.screen.blit(
+                        empty_surf,
+                        (WIDTH // 2 - empty_surf.get_width() // 2, HEIGHT // 2 - 20),
+                    )
+
+                for btn in self.leaderboard_buttons: btn.draw(self.screen)
+
+            elif self.state == "GAME":
+                # Translucent structural ribbon behind text HUD (fixed at top)
+                hud_ribbon = pygame.Surface((WIDTH, HUD_HEIGHT), pygame.SRCALPHA)
+                hud_ribbon.fill((15, 17, 22, 220))
+                self.screen.blit(hud_ribbon, (0, HUD_Y))
+
+                hud_str = (
+                    f"User Profile: {self.name_input.text}  │  "
+                    f"Length: {len(self.snake.body)} / {TOTAL_TILES}"
+                )
+                hud_surface = self.font_sm.render(hud_str, True, COLOR_TEXT)
+                self.screen.blit(hud_surface, (15, HUD_Y + 15))
+
+                # Grid lines (below HUD)
+                for x in range(GRID_WIDTH + 1):
+                    pygame.draw.line(
+                        self.screen,
+                        COLOR_GRID,
+                        (x * GRID_SIZE, HUD_HEIGHT),
+                        (x * GRID_SIZE, HEIGHT),
+                    )
+                for y in range(GRID_HEIGHT + 1):
+                    pygame.draw.line(
+                        self.screen,
+                        COLOR_GRID,
+                        (0, y * GRID_SIZE + HUD_HEIGHT),
+                        (WIDTH, y * GRID_SIZE + HUD_HEIGHT),
+                    )
+
+                # Render upgraded vector overlays instead of basic rect blocks
+                if self.normal_food:
+                    self.draw_polished_food(self.normal_food)
+                for sf in self.special_foods:
+                    self.draw_polished_food(sf)
+
+                self.snake.draw(self.screen)
+
+                if self.paused:
+                    pause_overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+                    pause_overlay.fill((16, 18, 23, 150))
+                    self.screen.blit(pause_overlay, (0, 0))
+                    pt = self.font_ui.render("PAUSED  —  Press P to Resume", True, (52, 152, 219))
+                    self.screen.blit(pt, (WIDTH // 2 - pt.get_width() // 2, HEIGHT // 2 - pt.get_height() // 2))
+                elif self.game_over:
+                    self.draw_overlay("CRITICAL COLLISION: GAME OVER", (231, 76, 60))
+                elif self.game_won:
+                    self.draw_overlay("ECOSYSTEM COMPLETED: VICTORY!", (46, 204, 113))
+
+        finally:
+            # Restore the real window surface regardless of any rendering error
+            self.screen = old_screen
+
         self.screen.blit(canvas, (WINDOW_BORDER, WINDOW_BORDER))
 
         # Draw outer border framing the game area
-        try:
-            pygame.draw.rect(
-                self.screen,
-                COLOR_TEXT,
-                pygame.Rect(0, 0, WIDTH + 2 * WINDOW_BORDER, HEIGHT + 2 * WINDOW_BORDER),
-                WINDOW_BORDER,
-            )
-        except Exception:
-            pass
+        pygame.draw.rect(
+            self.screen,
+            COLOR_TEXT,
+            pygame.Rect(0, 0, WIDTH + 2 * WINDOW_BORDER, HEIGHT + 2 * WINDOW_BORDER),
+            WINDOW_BORDER,
+        )
 
         pygame.display.flip()
 

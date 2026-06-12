@@ -10,6 +10,7 @@ TOTAL_TILES = GRID_WIDTH * GRID_HEIGHT
 FPS = 10
 HUD_Y = 0  # Y position where legend starts
 WINDOW_BORDER = 5  # Thickness in pixels of the outer window border
+SPECIAL_FOOD_INTERVAL = 8.0  # Seconds between special food spawns
 
 # Color Configuration Matrix (RGB Palettes)
 COLOR_BG = (24, 26, 27)

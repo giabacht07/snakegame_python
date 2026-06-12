@@ -23,6 +23,8 @@ class Button:
         self.text = text
         self.font = font
         self.callback = callback
+        self._hover_surf = pygame.Surface(self.rect.size, pygame.SRCALPHA)
+        self._hover_surf.fill((*COLOR_BUTTON_HOVER, 40))
 
     def draw(self, surface):
         """Render the button and hover state to the given surface."""
@@ -36,11 +38,8 @@ class Button:
         pygame.draw.rect(surface, bg_color, self.rect, border_radius=8)
         pygame.draw.rect(surface, border_color, self.rect, 2, border_radius=8)
 
-        # Inject soft transparent alpha layer flash on hover
         if hovered:
-            hover_surf = pygame.Surface(self.rect.size, pygame.SRCALPHA)
-            hover_surf.fill((*COLOR_BUTTON_HOVER, 40))
-            surface.blit(hover_surf, self.rect.topleft)
+            surface.blit(self._hover_surf, self.rect.topleft)
 
         text_color = COLOR_TEXT if hovered else (210, 215, 220)
         text_surf = self.font.render(self.text, True, text_color)
@@ -64,7 +63,6 @@ class TextInput:
         self.text = default_text
         self.active = False
         self.cursor_visible = True
-        self.last_cursor_toggle = time.time()
 
     def handle_event(self, event):
         """Process click and typing events for the text input widget."""
@@ -83,9 +81,7 @@ class TextInput:
 
     def draw(self, surface):
         """Draw the input box and blinking cursor onto the surface."""
-        if time.time() - self.last_cursor_toggle >= 0.5:
-            self.cursor_visible = not self.cursor_visible
-            self.last_cursor_toggle = time.time()
+        self.cursor_visible = int(time.time() * 2) % 2 == 0
 
         bg_color = (36, 40, 48) if self.active else (25, 27, 30)
         border_color = (52, 152, 219) if self.active else (65, 70, 80)

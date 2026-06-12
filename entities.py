@@ -31,16 +31,6 @@ class Food:
         """Return the current grid position of this food item."""
         return (self.x, self.y)
 
-    def draw(self, surface):
-        """Draw this food item onto the surface with HUD offset."""
-        rect = pygame.Rect(
-            self.x * GRID_SIZE,
-            self.y * GRID_SIZE + HUD_HEIGHT,
-            GRID_SIZE,
-            GRID_SIZE,
-        )
-        pygame.draw.rect(surface, self.color, rect, border_radius=4)
-
     def update(self):
         """Return True when the food should remain active."""
         return True
