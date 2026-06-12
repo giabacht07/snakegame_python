@@ -9,7 +9,6 @@ with older files.
 
 import json
 import os
-import time
 from decorators import history_pipeline
 
 class GameHistoryManager:
@@ -53,7 +52,6 @@ class GameHistoryManager:
         history.append({
             "name": name,
             "length": length,
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         })
         history.sort(key=lambda r: r.get("length", 0), reverse=True)
 
