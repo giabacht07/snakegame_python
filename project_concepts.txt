@@ -64,10 +64,3 @@ This project already covers many important CS concepts:
 - event-driven programming and game loops;
 - UI widget design and 2D rendering.
 
-Areas to focus on next:
-- solidifying Python OOP principles (especially subclasses and method overriding);
-- practicing decorator syntax and use cases;
-- understanding safe file I/O and data migration;
-- refining the game loop and state transitions.
-
-Good work so far — this is a strong first-year project with real structure and useful patterns!
